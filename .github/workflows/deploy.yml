@@ -10,10 +10,9 @@ jobs:
     env:
       KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
       KUBE_DEPLOYMENT: sample-deployment-c8f12d0c
-      ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       ECR_REPOSITORY: sample-app
       IMAGE_TAG: ${{ github.sha }}
-      IMAGE_REF: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -32,6 +31,9 @@ jobs:
     - name: build docker image
       run: docker build -t $IMAGE_REF .
       working-directory: server
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_REF: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: image push
       run: docker push $IMAGE_REF
