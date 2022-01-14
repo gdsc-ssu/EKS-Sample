@@ -21,27 +21,30 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2
+        aws-region: ap-northeast-2
     
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-
-    - name: build docker image
-      run: docker build -t $IMAGE_REF .
-      working-directory: server
+    - name: Set Environment Variable
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_REF: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      run: |
+        echo "IMAGE_REF=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+
+
+    - name: build docker image
+      run: docker build -t ${{ env.IMAGE_REF }} .
+      working-directory: server
 
     - name: image push
-      run: docker push $IMAGE_REF
+      run: docker push ${{ env.IMAGE_REF }}
 
     - name: deploy to cluster
       uses: kodermax/kubectl-aws-eks@master
       with:
-        args: set image deployment/$KUBE_DEPLOYMENT $ECR_REPOSITORY=$IMAGE_REF
+        args: set image deployment/$KUBE_DEPLOYMENT $ECR_REPOSITORY=${{ env.IMAGE_REF }}
         
     - name: verify deployment
       uses: kodermax/kubectl-aws-eks@master
